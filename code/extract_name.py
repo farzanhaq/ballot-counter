@@ -64,9 +64,6 @@ def get_candidate_name(img):
     for key in templates:
         template = templates[key]
 
-        print(image)
-        print("")
-        print(template)
         res = cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
         # max_val = templateMatching(image, template)
     
