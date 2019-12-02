@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
+from extract_name import get_candidate_name
+
+
 def sobel_convolution(I, direction, mode):
     i_shape = I.shape
     i_rows = i_shape[0]
@@ -130,12 +133,15 @@ def segment_ballot(img):
         candidate.append(candidate_with_vote_segmentation[i][0:candidate_with_vote_segmentation[i].shape[0], 0:ballot_border_middle])
         vote.append(candidate_with_vote_segmentation[i][0:candidate_with_vote_segmentation[i].shape[0], ballot_border_middle:candidate_with_vote_segmentation[i].shape[1]])
 
+    candidate[0] = np.clip(candidate[0], 0, 255)
     fig = plt.figure()
     ax1 = fig.add_subplot(1,2,1)
-    ax1.imshow(candidate[0])
+    ax1.imshow(candidate[0], cmap='gray')
     ax2 = fig.add_subplot(1,2,2)
-    ax2.imshow(vote[0])
+    ax2.imshow(vote[0], cmap='gray')
     plt.show()
+    candidate_name = get_candidate_name(candidate[0].astype(np.uint8))
+    
 
 """def crop_images():
     images = [cv2.imread(file) for file in glob.glob("dataset/valid/*.png")]
@@ -148,5 +154,5 @@ def segment_ballot(img):
 
 #crop_images()
 
-img = "dataset/valid/valid_0.png"
+img = "../dataset/valid/valid_0.png"
 segment_ballot(img)
