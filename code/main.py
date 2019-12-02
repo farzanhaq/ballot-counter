@@ -80,59 +80,57 @@ def sobel_convolution(I, direction, mode):
 
     return filtered_image
 
-def segment_ballot(img):
-    img_gray = cv2.imread(img, 0)
-    retval, img_gray_thresholded = cv2.threshold(img_gray, 128, 255, cv2.THRESH_BINARY)
-    ballot_segmentation = sobel_convolution(img_gray_thresholded, 'horizontal', 'same')
+def segment_ballot(img_path):
+    images = [cv2.imread(file) for file in glob.glob(img_path + "*.png")]
 
-    ballot_border_top = []
-    ballot_border_bottom = []
+    print(len(images))
 
-    for row in range(ballot_segmentation.shape[0]):
-        is_border_top = True
-        is_border_bottom = True
-        for col in range(ballot_segmentation.shape[1]):
-            if (ballot_segmentation[row, col] >= 0):
-                is_border_top = False
-            if (ballot_segmentation[row, col] <= 0):
-                is_border_bottom = False
-        if (is_border_top and (row-1) not in ballot_border_top):
-            ballot_border_top.append(row)
-        if (is_border_bottom and (row-1) not in ballot_border_bottom):
-            ballot_border_bottom.append(row)
+    for img in range(len(images)):
+        img_gray = cv2.cvtColor(images[img], cv2.COLOR_BGR2GRAY)
+        retval, img_gray_thresholded = cv2.threshold(img_gray, 128, 255, cv2.THRESH_BINARY)
+        ballot_segmentation = sobel_convolution(img_gray_thresholded, 'horizontal', 'same')
 
-    num_candidates_with_votes = len(ballot_border_top)
-    candidate_with_vote = []
+        ballot_border_top = []
+        ballot_border_bottom = []
 
-    for i in range(num_candidates_with_votes):
-        candidate_with_vote.append(img_gray_thresholded[ballot_border_top[i]:ballot_border_bottom[i], 0:img_gray_thresholded.shape[1]])
+        for row in range(ballot_segmentation.shape[0]):
+            is_border_top = True
+            is_border_bottom = True
+            for col in range(ballot_segmentation.shape[1]):
+                if (ballot_segmentation[row, col] >= 0):
+                    is_border_top = False
+                if (ballot_segmentation[row, col] <= 0):
+                    is_border_bottom = False
+            if (is_border_top and (row-1) not in ballot_border_top):
+                ballot_border_top.append(row)
+            if (is_border_bottom and (row-1) not in ballot_border_bottom):
+                ballot_border_bottom.append(row)
 
-    candidate_with_vote_segmentation = sobel_convolution(candidate_with_vote[0], 'vertical', 'same')
-    ballot_border_middle = 0
+        num_candidates_with_votes = len(ballot_border_top)
+        candidate_with_vote = []
 
-    for col in range(candidate_with_vote_segmentation.shape[1]):
-        is_border_middle = True
-        for row in range(candidate_with_vote_segmentation.shape[0]):
-            if (candidate_with_vote_segmentation[row, col] <= 0):
-                is_border_middle = False
-        if (is_border_middle and col != 0 and (col - 1) != ballot_border_middle):
-            ballot_border_middle = col
+        for i in range(num_candidates_with_votes):
+            candidate_with_vote.append(img_gray_thresholded[ballot_border_top[i]:ballot_border_bottom[i], 0:img_gray_thresholded.shape[1]])
 
-    candidate = []
-    vote = []
+        candidate_with_vote_segmentation = sobel_convolution(candidate_with_vote[0], 'vertical', 'same')
+        ballot_border_middle = 0
 
-    for i in range(len(candidate_with_vote)):
-        candidate.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], 0:ballot_border_middle])
-        vote.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], ballot_border_middle:candidate_with_vote[i].shape[1]])
+        for col in range(candidate_with_vote_segmentation.shape[1]):
+            is_border_middle = True
+            for row in range(candidate_with_vote_segmentation.shape[0]):
+                if (candidate_with_vote_segmentation[row, col] <= 0):
+                    is_border_middle = False
+            if (is_border_middle and col != 0 and (col - 1) != ballot_border_middle):
+                ballot_border_middle = col
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(1,2,1)
-    ax1.imshow(candidate[0], cmap='gray')
-    ax2 = fig.add_subplot(1,2,2)
-    ax2.imshow(vote[0], cmap='gray')
-    plt.show()
-    candidate_name = get_candidate_name(candidate[0].astype(np.uint8))
-    
+        candidate = []
+        vote = []
+
+        for i in range(len(candidate_with_vote)):
+            candidate.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], 0:ballot_border_middle])
+            vote.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], ballot_border_middle:candidate_with_vote[i].shape[1]])
+
+        cv2.imwrite("dataset/valid_votes/valid_vote_" + str(img) + ".png", vote[0])
 
 """def crop_images():
     images = [cv2.imread(file) for file in glob.glob("dataset/valid/*.png")]
@@ -145,5 +143,8 @@ def segment_ballot(img):
 
 #crop_images()
 
-img = "../dataset/valid/valid_0.png"
-segment_ballot(img)
+valid_path = "dataset/valid/"
+invalid_path = "dataset/invalid/"
+
+segment_ballot(valid_path)
+#segment_ballot(invalid_path)
