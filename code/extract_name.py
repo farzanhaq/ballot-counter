@@ -47,7 +47,7 @@ def get_candidate_name(img):
         'em': 'Elizabeth May',
         'js': 'Jagmeet Singh',
         'jt': 'Justin Trudeau',
-        'mb': 'Maxim Bernier',
+        'mb': 'Maxime Bernier',
         'yb': 'Yves-François Blanchet'
     }
     

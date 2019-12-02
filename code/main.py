@@ -83,8 +83,6 @@ def sobel_convolution(I, direction, mode):
 def segment_ballot(img):
     img_gray = cv2.imread(img, 0)
     retval, img_gray_thresholded = cv2.threshold(img_gray, 128, 255, cv2.THRESH_BINARY)
-
-    candidate_with_vote = []
     ballot_segmentation = sobel_convolution(img_gray_thresholded, 'horizontal', 'same')
 
     ballot_border_top = []
@@ -104,24 +102,18 @@ def segment_ballot(img):
             ballot_border_bottom.append(row)
 
     num_candidates_with_votes = len(ballot_border_top)
+    candidate_with_vote = []
 
     for i in range(num_candidates_with_votes):
-        candidate_with_vote.append(img_gray[ballot_border_top[i]:ballot_border_bottom[i], 0:img_gray.shape[1]])
+        candidate_with_vote.append(img_gray_thresholded[ballot_border_top[i]:ballot_border_bottom[i], 0:img_gray_thresholded.shape[1]])
 
-    candidate_with_vote_segmentation = []
-
-    for candidate in candidate_with_vote:
-        retval, candidate_gray_thresholded = cv2.threshold(candidate, 128, 255, cv2.THRESH_BINARY)
-        candidate_with_vote_segmented = sobel_convolution(candidate_gray_thresholded, 'vertical', 'same')
-        candidate_with_vote_segmentation.append(candidate_with_vote_segmented)
-
-    candidate_with_vote_segmentation_sample = candidate_with_vote_segmentation[0]
+    candidate_with_vote_segmentation = sobel_convolution(candidate_with_vote[0], 'vertical', 'same')
     ballot_border_middle = 0
 
-    for col in range(candidate_with_vote_segmentation_sample.shape[1]):
+    for col in range(candidate_with_vote_segmentation.shape[1]):
         is_border_middle = True
-        for row in range(candidate_with_vote_segmentation_sample.shape[0]):
-            if (candidate_with_vote_segmentation_sample[row, col] <= 0):
+        for row in range(candidate_with_vote_segmentation.shape[0]):
+            if (candidate_with_vote_segmentation[row, col] <= 0):
                 is_border_middle = False
         if (is_border_middle and col != 0 and (col - 1) != ballot_border_middle):
             ballot_border_middle = col
@@ -129,11 +121,10 @@ def segment_ballot(img):
     candidate = []
     vote = []
 
-    for i in range(len(candidate_with_vote_segmentation)):
-        candidate.append(candidate_with_vote_segmentation[i][0:candidate_with_vote_segmentation[i].shape[0], 0:ballot_border_middle])
-        vote.append(candidate_with_vote_segmentation[i][0:candidate_with_vote_segmentation[i].shape[0], ballot_border_middle:candidate_with_vote_segmentation[i].shape[1]])
+    for i in range(len(candidate_with_vote)):
+        candidate.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], 0:ballot_border_middle])
+        vote.append(candidate_with_vote[i][0:candidate_with_vote[i].shape[0], ballot_border_middle:candidate_with_vote[i].shape[1]])
 
-    candidate[0] = np.clip(candidate[0], 0, 255)
     fig = plt.figure()
     ax1 = fig.add_subplot(1,2,1)
     ax1.imshow(candidate[0], cmap='gray')
