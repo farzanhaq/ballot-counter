@@ -7,28 +7,12 @@ import random
 
 from extract_name import get_candidate_name
 
-def sobel_convolution(I, direction, mode):
+def convolution(I, filter, mode):
     i_shape = I.shape
     i_rows = i_shape[0]
     i_columns = i_shape[1]
 
-    sobel_filter = np.array([])
-
-    if (direction == 'vertical'):
-        sobel_filter = np.array([
-            [-1, 0, 1],
-            [-2, 0, 2],
-            [-1, 0, 1]
-        ])
-        
-    elif (direction == 'horizontal'):
-        sobel_filter = np.array([
-            [1, 2, 1],
-            [0, 0, 0],
-            [-1, -2, -1]
-        ])
-
-    h_shape = sobel_filter.shape
+    h_shape = filter.shape
     h_rows = h_shape[0]
     h_columns = h_shape[1]
 
@@ -73,7 +57,7 @@ def sobel_convolution(I, direction, mode):
                 for l in range(-1 * (h_columns // 2), h_columns // 2 + 1):
                     if image_y_pixel + l < 0 or image_y_pixel + l >= i_columns:
                         continue
-                    filter_val = sobel_filter[k + h_rows // 2, l + h_columns // 2]
+                    filter_val = filter[k + h_rows // 2, l + h_columns // 2]
                     image_val = I[image_x_pixel + k, image_y_pixel + l]
                     dot_sum += filter_val * image_val
 
@@ -85,7 +69,14 @@ def segment_ballot(img_path):
     img = cv2.imread(img_path)
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     retval, img_gray_thresholded = cv2.threshold(img_gray, 128, 255, cv2.THRESH_BINARY)
-    ballot_segmentation = sobel_convolution(img_gray_thresholded, 'horizontal', 'same')
+
+    horizontal_filter = np.array([
+        [1, 2, 1],
+        [0, 0, 0],
+        [-1, -2, -1]
+    ])
+
+    ballot_segmentation = convolution(img_gray_thresholded, horizontal_filter, 'same')
 
     ballot_border_top = []
     ballot_border_bottom = []
@@ -109,7 +100,13 @@ def segment_ballot(img_path):
     for i in range(num_candidates_with_votes):
         candidate_with_vote.append(img_gray_thresholded[ballot_border_top[i]:ballot_border_bottom[i], 0:img_gray_thresholded.shape[1]])
 
-    candidate_with_vote_segmentation = sobel_convolution(candidate_with_vote[0], 'vertical', 'same')
+    vertical_filter = np.array([
+            [-1, 0, 1],
+            [-2, 0, 2],
+            [-1, 0, 1]
+        ])
+    
+    candidate_with_vote_segmentation = convolution(candidate_with_vote[0], vertical_filter, 'same')
     ballot_border_middle = 0
 
     for col in range(candidate_with_vote_segmentation.shape[1]):
@@ -132,11 +129,18 @@ def segment_ballot(img_path):
 def augment_data(dir_path, num_images, prefix):
     for j in range(num_images):
         image_path = '{}/{}_votes/{}_vote_{}.png'.format(dir_path, prefix, prefix, j)
-        img = cv2.imread(image_path)
+        img = cv2.imread(image_path, 0)
         
         img_flip = cv2.flip(img, 1)
         img_noise = img + 2 * img.std() * np.random.random(img.shape)
-        img_blur = cv2.GaussianBlur(img, (3, 3), 0)
+
+        gaussian_filter = np.array([
+            [1/16, 1/8, 1/16],
+            [1/8, 1/4, 1/8],
+            [1/16, 1/8, 1/16]
+        ])
+
+        img_blur = convolution(img, gaussian_filter, 'same')
 
         output_flip_path = '{}/{}_votes/{}_vote_flip_{}.png'.format(dir_path, prefix, prefix, j)
         output_noise_path = '{}/{}_votes/{}_vote_noise_{}.png'.format(dir_path, prefix, prefix, j)
@@ -168,3 +172,4 @@ def extract_marks(dir_path, num_images, prefix):
 #extract_marks('../dataset', 50, 'valid')
 #augment_data('../dataset', 150, 'invalid')
 #augment_data('../dataset', 50, 'valid')
+#augment_single_data()
