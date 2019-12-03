@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
+import math
+import random
 
 from extract_name import get_candidate_name
-
 
 def sobel_convolution(I, direction, mode):
     i_shape = I.shape
@@ -128,6 +129,30 @@ def segment_ballot(img_path):
 
     return candidate, vote
 
+def augment_data(dir_path, num_images, prefix):
+    for j in range(num_images):
+        image_path = '{}/{}_votes/{}_vote_{}.png'.format(dir_path, prefix, prefix, j)
+        img = cv2.imread(image_path)
+        
+        img_flip = cv2.flip(img, 1)
+        img_noise = img + 2 * img.std() * np.random.random(img.shape)
+        img_blur = cv2.GaussianBlur(img, (3, 3), 0)
+
+        output_flip_path = '{}/{}_votes/{}_vote_flip_{}.png'.format(dir_path, prefix, prefix, j)
+        output_noise_path = '{}/{}_votes/{}_vote_noise_{}.png'.format(dir_path, prefix, prefix, j)
+        output_blur_path = '{}/{}_votes/{}_vote_blur_{}.png'.format(dir_path, prefix, prefix, j)
+
+        cv2.imwrite(output_flip_path, img_flip)
+        cv2.imwrite(output_noise_path, img_noise)
+        cv2.imwrite(output_blur_path, img_blur)
+
+def extract_marks(dir_path, num_images, prefix):
+    for j in range(num_images):
+        image_path = '{}/{}/{}_{}.png'.format(dir_path, prefix, prefix, j)
+        candidate, vote = segment_ballot(image_path)
+
+        output_path = '{}/{}_votes/{}_vote_{}.png'.format(dir_path, prefix, prefix, j)
+        cv2.imwrite(output_path, vote[0])
 
 """def crop_images():
     images = [cv2.imread(file) for file in glob.glob("dataset/valid/*.png")]
@@ -137,17 +162,9 @@ def segment_ballot(img_path):
     images = [cv2.imread(file) for file in glob.glob("dataset/invalid/*.png")]
     for image in range(len(images)):
         cv2.imwrite('dataset/invalid2/invalid_' + str(image) + '.png', images[image][2:-2, 4:-4])"""
-
-#crop_images()
-
-def extract_marks(dir_path, num_images, prefix):
-    for j in range(num_images):
-        image_path = '{}/{}/{}_{}.png'.format(dir_path, prefix, prefix, j)
-        candidate, vote = segment_ballot(image_path)
-
-        output_path = '{}/{}_votes/{}_vote_{}.png'.format(dir_path, prefix, prefix, j)
-        cv2.imwrite(output_path, vote[0])
         
-
-extract_marks('../dataset', 150, 'invalid')
-extract_marks('../dataset', 50, 'valid')
+#crop_images()
+#extract_marks('../dataset', 150, 'invalid')
+#extract_marks('../dataset', 50, 'valid')
+#augment_data('../dataset', 150, 'invalid')
+#augment_data('../dataset', 50, 'valid')
